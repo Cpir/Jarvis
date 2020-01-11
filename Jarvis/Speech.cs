@@ -13,12 +13,11 @@ namespace PRMover
         private GCHandle handle;
         private CultureInfo cultureInfo = new CultureInfo("ru-RU");
 
-        public Speech Speech { get; set; }
+        public Speech Speech { get; set; } = new Speech();
 
         public Jarvis()
         {
             handle = GCHandle.Alloc(this);
-            Speech = new Speech();
         }
 
         #region IDisposable Support
@@ -48,12 +47,11 @@ namespace PRMover
     public class Speech : IDisposable
     {
         private GCHandle handle;
-        private CultureInfo cultureInfo = new CultureInfo("ru-RU");
+        public CultureInfo CultureInfo { get; set; } = new CultureInfo("ru-RU");
         private SpeechRecognitionEngine recognition { get; set; }
         private SpeechSynthesizer synthesizer;
         private ReadOnlyCollection<InstalledVoice> voices;
-        private Thread mainWorker;
-        private Thread supportWorker;
+        private Thread mainWorker, supportWorker;
         private bool recognitionReady = false, synthesizerReady = false;
 
         public Speech()
@@ -71,16 +69,10 @@ namespace PRMover
             set { voices = value; }
         }
 
-        public CultureInfo CultureInfo
-        {
-            get { return cultureInfo; }
-            set { cultureInfo = value; }
-        }
-
         public void Speak(string Text)
         {
-            while (true)
-                synthesizer.SpeakAsync(Text);
+            mainWorker = new Thread(() => { while (true) synthesizer.SpeakAsync(Text); }) { Priority = ThreadPriority.Highest };
+            mainWorker.Start(); mainWorker.Join();
         }
 
         private void RecognitionConfigure()
@@ -104,9 +96,28 @@ namespace PRMover
                 synthesizer.SpeakCompleted +=
                     new EventHandler<SpeakCompletedEventArgs>(Synthesizer_SpeakCompleted);
             }
-
             synthesizerReady = true;
         }
+
+        public class JarvisSpeechEventArgs : EventArgs
+        {
+            BookmarkReachedEventArgs bookmarkReached { get; set; }
+            SpeakCompletedEventArgs completedEventArgs { get; set; }
+            SpeakProgressEventArgs progressEventArgs { get; set; }
+            SpeakStartedEventArgs startedEventArgs { get; set; }
+
+            JarvisSpeechEventArgs(BookmarkReachedEventArgs BookmarkReached,
+                SpeakCompletedEventArgs CompletedEventArgs,
+                SpeakProgressEventArgs ProgressEventArgs,
+                SpeakStartedEventArgs StartedEventArgs)
+            {
+                bookmarkReached = BookmarkReached;
+                completedEventArgs = CompletedEventArgs;
+                progressEventArgs = ProgressEventArgs;
+                startedEventArgs = StartedEventArgs;
+            }
+        }
+
 
         #region События синтезатора речи
         private void Synthesizer_BookmarkReached(object sender, BookmarkReachedEventArgs e)
