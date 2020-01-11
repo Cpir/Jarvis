@@ -49,7 +49,7 @@ namespace PRMover
     {
         private GCHandle handle;
         private CultureInfo cultureInfo = new CultureInfo("ru-RU");
-        private SpeechRecognitionEngine recognition;
+        private SpeechRecognitionEngine recognition { get; set; }
         private SpeechSynthesizer synthesizer;
         private ReadOnlyCollection<InstalledVoice> voices;
         private Thread mainWorker;
@@ -92,8 +92,7 @@ namespace PRMover
         {
             synthesizer = new SpeechSynthesizer();
             synthesizer.SetOutputToDefaultAudioDevice();
-            Voices = synthesizer.GetInstalledVoices();
-
+            try { Voices = synthesizer.GetInstalledVoices(); } catch { }
             if (!synthesizerReady)
             {
                 synthesizer.SpeakStarted +=
@@ -112,22 +111,22 @@ namespace PRMover
         #region События синтезатора речи
         private void Synthesizer_BookmarkReached(object sender, BookmarkReachedEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void Synthesizer_SpeakCompleted(object sender, SpeakCompletedEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void Synthesizer_SpeakProgress(object sender, SpeakProgressEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void Synthesizer_SpeakStarted(object sender, SpeakStartedEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
         #endregion
 
