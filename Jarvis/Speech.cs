@@ -12,13 +12,8 @@ namespace PRMover
     {
         private GCHandle handle;
         private CultureInfo cultureInfo = new CultureInfo("ru-RU");
-        private Speech speech;
 
-        public Speech Speech
-        {
-            get { return speech; }
-            set { speech = value; }
-        }
+        public Speech Speech { get; set; }
 
         public Jarvis()
         {
