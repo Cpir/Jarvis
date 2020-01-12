@@ -18,6 +18,12 @@ namespace PRMover
         public Jarvis()
         {
             handle = GCHandle.Alloc(this);
+            Speech.JarvisSpeechEvent += Speech_JarvisSpeechEvent;
+        }
+
+        private void Speech_JarvisSpeechEvent(object sender, Speech.JarvisSpeechEventArgs e)
+        {
+            
         }
 
         #region IDisposable Support
@@ -44,6 +50,8 @@ namespace PRMover
         #endregion
     }
 
+
+
     public class Speech : IDisposable
     {
         private GCHandle handle;
@@ -53,6 +61,9 @@ namespace PRMover
         private ReadOnlyCollection<InstalledVoice> voices;
         private Thread mainWorker, supportWorker;
         private bool recognitionReady = false, synthesizerReady = false;
+        
+        public delegate void JarvisSpeechEventDelegate(object sender, JarvisSpeechEventArgs e);
+        public event JarvisSpeechEventDelegate JarvisSpeechEvent;
 
         public Speech()
         {
@@ -85,6 +96,7 @@ namespace PRMover
             synthesizer = new SpeechSynthesizer();
             synthesizer.SetOutputToDefaultAudioDevice();
             try { Voices = synthesizer.GetInstalledVoices(); } catch { }
+
             if (!synthesizerReady)
             {
                 synthesizer.SpeakStarted +=
