@@ -26,12 +26,25 @@ namespace PRMover
             public CultureInfo CultureInfo { get; set; } = new CultureInfo("ru-RU");
             private SpeechRecognitionEngine recognition { get; set; }
             private SpeechSynthesizer synthesizer;
-            private ReadOnlyCollection<InstalledVoice> voices;
             private Thread mainWorker, supportWorker;
             private bool recognitionReady = false, synthesizerReady = false;
 
-            public delegate void JarvisSpeechEventDelegate(object sender, JarvisSpeechEventArgs e);
-            public event JarvisSpeechEventDelegate JarvisSpeechEvent;
+            private string innerText, outerText;
+
+            //public delegate void JarvisSpeechEventDelegate(object sender, JarvisSpeechEventArgs e);
+            //public event JarvisSpeechEventDelegate JarvisSpeechEvent;
+
+            public string InnerText
+            {
+                get { return innerText; }
+                set { innerText = value; }
+            }
+
+            public string OuterText
+            {
+                get { return outerText; }
+                set { outerText = value; }
+            }
 
             public Speech()
             {
@@ -42,16 +55,10 @@ namespace PRMover
                 supportWorker.Start(); supportWorker.Join();
             }
 
-            public ReadOnlyCollection<InstalledVoice> Voices
-            {
-                get { return voices; }
-                set { voices = value; }
-            }
-
             public void Speak(string Text)
             {
-                mainWorker = new Thread(() => { while (true) synthesizer.SpeakAsync(Text); }) { Priority = ThreadPriority.Highest };
-                mainWorker.Start(); mainWorker.Join();
+                mainWorker = new Thread(() => { synthesizer.SpeakAsync(Text); }) { Priority = ThreadPriority.Highest };
+                mainWorker.Start();
             }
 
             private void RecognitionConfigure()
@@ -63,8 +70,6 @@ namespace PRMover
             {
                 synthesizer = new SpeechSynthesizer();
                 synthesizer.SetOutputToDefaultAudioDevice();
-                try { Voices = synthesizer.GetInstalledVoices(); } catch { }
-
                 if (!synthesizerReady)
                 {
                     synthesizer.SpeakStarted +=
@@ -80,24 +85,24 @@ namespace PRMover
                 synthesizerReady = true;
             }
 
-            public class JarvisSpeechEventArgs : EventArgs
-            {
-                BookmarkReachedEventArgs bookmarkReached { get; set; }
-                SpeakCompletedEventArgs completedEventArgs { get; set; }
-                SpeakProgressEventArgs progressEventArgs { get; set; }
-                SpeakStartedEventArgs startedEventArgs { get; set; }
+            //public class JarvisSpeechEventArgs : EventArgs
+            //{
+            //    BookmarkReachedEventArgs bookmarkReached { get; set; }
+            //    SpeakCompletedEventArgs completedEventArgs { get; set; }
+            //    SpeakProgressEventArgs progressEventArgs { get; set; }
+            //    SpeakStartedEventArgs startedEventArgs { get; set; }
 
-                JarvisSpeechEventArgs(BookmarkReachedEventArgs BookmarkReached,
-                    SpeakCompletedEventArgs CompletedEventArgs,
-                    SpeakProgressEventArgs ProgressEventArgs,
-                    SpeakStartedEventArgs StartedEventArgs)
-                {
-                    bookmarkReached = BookmarkReached;
-                    completedEventArgs = CompletedEventArgs;
-                    progressEventArgs = ProgressEventArgs;
-                    startedEventArgs = StartedEventArgs;
-                }
-            }
+            //    JarvisSpeechEventArgs(BookmarkReachedEventArgs BookmarkReached,
+            //        SpeakCompletedEventArgs CompletedEventArgs,
+            //        SpeakProgressEventArgs ProgressEventArgs,
+            //        SpeakStartedEventArgs StartedEventArgs)
+            //    {
+            //        bookmarkReached = BookmarkReached;
+            //        completedEventArgs = CompletedEventArgs;
+            //        progressEventArgs = ProgressEventArgs;
+            //        startedEventArgs = StartedEventArgs;
+            //    }
+            //}
 
             #region События синтезатора речи
             private void Synthesizer_BookmarkReached(object sender, BookmarkReachedEventArgs e)
@@ -175,7 +180,7 @@ namespace PRMover
     //    private ReadOnlyCollection<InstalledVoice> voices;
     //    private Thread mainWorker, supportWorker;
     //    private bool recognitionReady = false, synthesizerReady = false;
-        
+
     //    public delegate void JarvisSpeechEventDelegate(object sender, JarvisSpeechEventArgs e);
     //    public event JarvisSpeechEventDelegate JarvisSpeechEvent;
 
@@ -222,7 +227,7 @@ namespace PRMover
     //            synthesizer.SpeakCompleted +=
     //                new EventHandler<SpeakCompletedEventArgs>(Synthesizer_SpeakCompleted);
     //        }
-            
+
     //        synthesizerReady = true;
     //    }
 

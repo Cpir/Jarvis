@@ -11,10 +11,11 @@ namespace PRMover
         static void Main(string[] args)
         {
             Jarvis jarvis = new Jarvis();
-            
-            jarvis.Voice.Speak("ЕЕЕЕЕББББАААААТЬ кооооопаааааааааааать");
-            
-            Console.ReadLine();
+            while (true)
+            {
+                Console.WriteLine("Что скажем?");
+                jarvis.Voice.Speak(Console.ReadLine());
+            }
         }
     }
 }
