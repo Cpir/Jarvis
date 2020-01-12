@@ -12,7 +12,7 @@ namespace PRMover
         {
             Jarvis jarvis = new Jarvis();
             
-            jarvis.Speech.Speak("ЕЕЕЕЕББББАААААТЬ кооооопаааааааааааать");
+            jarvis.Voice.Speak("ЕЕЕЕЕББББАААААТЬ кооооопаааааааааааать");
             
             Console.ReadLine();
         }
