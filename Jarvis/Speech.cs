@@ -1,10 +1,13 @@
 ﻿using Microsoft.Speech.Recognition;
+using Microsoft.Speech.Recognition.SrgsGrammar;
 using Microsoft.Speech.Synthesis;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Xml;
 
 namespace PRMover
 {
@@ -25,6 +28,7 @@ namespace PRMover
             private GCHandle handle;
             public CultureInfo CultureInfo { get; set; } = new CultureInfo("ru-RU");
             private SpeechRecognitionEngine recognition { get; set; }
+            private Grammar grammar { get; set; }
             private SpeechSynthesizer synthesizer;
             private Thread mainWorker, supportWorker;
             private bool recognitionReady = false, synthesizerReady = false;
@@ -57,13 +61,37 @@ namespace PRMover
 
             public void Speak(string Text)
             {
-                mainWorker = new Thread(() => { synthesizer.SpeakAsync(Text); }) { Priority = ThreadPriority.Highest };
-                mainWorker.Start();
+                mainWorker = new Thread(() => { synthesizer.SetOutputToWaveFile($"{AppDomain.CurrentDomain.BaseDirectory}1.wav"); synthesizer.SpeakAsync(Text); }) { Priority = ThreadPriority.Highest };
+                mainWorker.Start(); mainWorker.Join();
+            }
+
+            public void Listen(string FilePath)
+            {
+                recognition.RecognizeAsync();
             }
 
             private void RecognitionConfigure()
             {
+                recognition = new SpeechRecognitionEngine();
 
+                if (!recognitionReady)
+                {
+                    recognition.LoadGrammarCompleted += new EventHandler<LoadGrammarCompletedEventArgs>(Recognition_LoadGrammarCompleted);
+                    recognition.SpeechDetected += new EventHandler<SpeechDetectedEventArgs>(Recognition_SpeechDetected);
+                    recognition.SpeechHypothesized += new EventHandler<SpeechHypothesizedEventArgs>(Recognition_SpeechHypothesized);
+                    recognition.SpeechRecognitionRejected += new EventHandler<SpeechRecognitionRejectedEventArgs>(Recognition_SpeechRecognitionRejected);
+                    recognition.SpeechRecognized += new EventHandler<SpeechRecognizedEventArgs>(Recognition_SpeechRecognized);
+                    recognition.AudioSignalProblemOccurred += new EventHandler<AudioSignalProblemOccurredEventArgs>(Recognition_AudioSignalProblemOccurred);
+                }
+                GrammarBuilder builder = new GrammarBuilder();
+                
+                SrgsDocument srgsDocument = new SrgsDocument($"{AppDomain.CurrentDomain.BaseDirectory}123.xml");
+                grammar = new Grammar(srgsDocument);
+             
+                
+                recognition.LoadGrammar(grammar);
+              
+                recognitionReady = true;
             }
 
             private void SynthesizerConfigure()
@@ -84,6 +112,38 @@ namespace PRMover
 
                 synthesizerReady = true;
             }
+
+            private void Recognition_AudioSignalProblemOccurred(object sender, AudioSignalProblemOccurredEventArgs e)
+            {
+
+            }
+
+            private void Recognition_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
+            {
+
+            }
+
+            private void Recognition_SpeechRecognitionRejected(object sender, SpeechRecognitionRejectedEventArgs e)
+            {
+
+            }
+
+            private void Recognition_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
+            {
+
+            }
+
+            private void Recognition_SpeechDetected(object sender, SpeechDetectedEventArgs e)
+            {
+
+            }
+
+            private void Recognition_LoadGrammarCompleted(object sender, LoadGrammarCompletedEventArgs e)
+            {
+
+            }
+
+
 
             //public class JarvisSpeechEventArgs : EventArgs
             //{
