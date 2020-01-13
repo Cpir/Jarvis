@@ -16,8 +16,8 @@ namespace PRMover
     public class Jarvis : IDisposable
     {
         private GCHandle handle;
-        private CultureInfo cultureInfo = new CultureInfo("ru-RU");
 
+        public CultureInfo CultureInfo { get; set; } = new CultureInfo("ru-RU");
         public Speech Voice { get; set; } = new Speech();
 
         public Jarvis()
@@ -28,17 +28,13 @@ namespace PRMover
         public class Speech : IDisposable
         {
             private GCHandle handle;
-            public CultureInfo CultureInfo { get; set; } = new CultureInfo("ru-RU");
+            private SpeechSynthesizer synthesizer { get; set; } = new SpeechSynthesizer();
             private SpeechRecognitionEngine recognition { get; set; }
-            private Microsoft.Speech.Recognition.Grammar grammar { get; set; }
-            private Microsoft.Speech.Synthesis.SpeechSynthesizer synthesizer;
+            public Grammar DictationGrammar { get; set; }
+
             private Thread mainWorker, supportWorker;
             private bool recognitionReady = false, synthesizerReady = false;
-
             private string innerText, outerText;
-
-            //public delegate void JarvisSpeechEventDelegate(object sender, JarvisSpeechEventArgs e);
-            //public event JarvisSpeechEventDelegate JarvisSpeechEvent;
 
             public string InnerText
             {
@@ -55,10 +51,9 @@ namespace PRMover
             public Speech()
             {
                 handle = GCHandle.Alloc(this);
-                mainWorker = new Thread(() => RecognitionConfigure()) { Priority = ThreadPriority.Highest };
-                supportWorker = new Thread(() => SynthesizerConfigure()) { Priority = ThreadPriority.Highest };
-                mainWorker.Start(); mainWorker.Join();
-                supportWorker.Start(); supportWorker.Join();
+                GetDictationGrammar();
+                RecognitionConfigure();
+                SynthesizerConfigure();
             }
 
             public void Speak(string Text)
@@ -74,43 +69,19 @@ namespace PRMover
 
             private void RecognitionConfigure()
             {
-                
                 recognition = new SpeechRecognitionEngine();
-                GrammarBuilder startStop = new GrammarBuilder();
-                GrammarBuilder dictation = new GrammarBuilder();
-                dictation.AppendWildcard();
-                //dictation.AppendDictation();
-
-                //startStop.Append(new SemanticResultKey("StartDictation", new SemanticResultValue("Start Dictation", true)));
-                //startStop.Append(new SemanticResultKey("DictationInput", dictation));
-                //startStop.Append(new SemanticResultKey("StopDictation", new SemanticResultValue("Stop Dictation", false)));
-                Grammar grammar = new Grammar(dictation);
-                grammar.Enabled = true;
-                grammar.Name = "Free-Text Dictation";
-
-
-                if (!recognitionReady)
-                {
-                    recognition.LoadGrammarCompleted += new EventHandler<LoadGrammarCompletedEventArgs>(Recognition_LoadGrammarCompleted);
-                    recognition.SpeechDetected += new EventHandler<SpeechDetectedEventArgs>(Recognition_SpeechDetected);
-                    recognition.SpeechHypothesized += new EventHandler<SpeechHypothesizedEventArgs>(Recognition_SpeechHypothesized);
-                    recognition.SpeechRecognitionRejected += new EventHandler<SpeechRecognitionRejectedEventArgs>(Recognition_SpeechRecognitionRejected);
-                    recognition.SpeechRecognized += new EventHandler<SpeechRecognizedEventArgs>(Recognition_SpeechRecognized);
-                    recognition.AudioSignalProblemOccurred += new EventHandler<AudioSignalProblemOccurredEventArgs>(Recognition_AudioSignalProblemOccurred);
-                }
-                //GrammarBuilder builder = new GrammarBuilder();
-                
-                //SrgsDocument srgsDocument = new SrgsDocument($"{AppDomain.CurrentDomain.BaseDirectory}123.xml");
-                //grammar = new Microsoft.Speech.Recognition.Grammar(srgsDocument);
-                
-                recognition.LoadGrammar(grammar);
-              
+                recognition.SetInputToNull();
+                recognition.LoadGrammarCompleted += new EventHandler<LoadGrammarCompletedEventArgs>(Recognition_LoadGrammarCompleted);
+                recognition.SpeechDetected += new EventHandler<SpeechDetectedEventArgs>(Recognition_SpeechDetected);
+                recognition.SpeechHypothesized += new EventHandler<SpeechHypothesizedEventArgs>(Recognition_SpeechHypothesized);
+                recognition.SpeechRecognitionRejected += new EventHandler<SpeechRecognitionRejectedEventArgs>(Recognition_SpeechRecognitionRejected);
+                recognition.SpeechRecognized += new EventHandler<SpeechRecognizedEventArgs>(Recognition_SpeechRecognized);
+                recognition.AudioSignalProblemOccurred += new EventHandler<AudioSignalProblemOccurredEventArgs>(Recognition_AudioSignalProblemOccurred);
                 recognitionReady = true;
             }
 
             private void SynthesizerConfigure()
             {
-                synthesizer = new Microsoft.Speech.Synthesis.SpeechSynthesizer();
                 synthesizer.SetOutputToDefaultAudioDevice();
                 if (!synthesizerReady)
                 {
@@ -127,6 +98,70 @@ namespace PRMover
                 synthesizerReady = true;
             }
 
+            private void GetDictationGrammar()
+            {
+                GrammarBuilder startStop = new GrammarBuilder();
+                GrammarBuilder dictation = new GrammarBuilder();
+                dictation.AppendDictation();
+
+                startStop.Append(new SemanticResultKey("StartDictation", new SemanticResultValue("Start Dictation", true)));
+                startStop.Append(new SemanticResultKey("DictationInput", dictation));
+                startStop.Append(new SemanticResultKey("EndDictation", new SemanticResultValue("Stop Dictation", false)));
+
+                GrammarBuilder spelling = new GrammarBuilder();
+                spelling.AppendDictation("spelling");
+                GrammarBuilder spellingGB = new GrammarBuilder();
+
+                spellingGB.Append(new SemanticResultKey("StartSpelling", new SemanticResultValue("Start Spelling", true)));
+                spellingGB.Append(new SemanticResultKey("spellingInput", spelling));
+                spellingGB.Append(new SemanticResultKey("StopSpelling", new SemanticResultValue("Stop Spelling", true)));
+
+                var _g = new Grammar(GrammarBuilder.Add(startStop, spellingGB));
+                _g.Enabled = true;
+                _g.Name = "Free-Text and Spelling Dictation";
+
+                SrgsDocument srgs = new SrgsDocument(GrammarBuilder.Add(startStop, spellingGB));
+                var _write = XmlWriter.Create($"{AppDomain.CurrentDomain.BaseDirectory}dict.xml");
+                srgs.WriteSrgs(_write);
+                _write.Close();
+
+
+                DictationGrammar = _g;
+            }
+
+            public void SetDictationMode()
+            {
+                if (recognition == null)
+                    throw new NullReferenceException(nameof(recognition));
+                if (this.DictationGrammar == null)
+                    throw new NullReferenceException(nameof(DictationGrammar));
+                DictationGrammar.Enabled = true;
+                recognition.LoadGrammar(DictationGrammar);
+            }
+
+            #region События синтезатора речи
+            private void Synthesizer_BookmarkReached(object sender, BookmarkReachedEventArgs e)
+            {
+
+            }
+
+            private void Synthesizer_SpeakCompleted(object sender, SpeakCompletedEventArgs e)
+            {
+
+            }
+
+            private void Synthesizer_SpeakProgress(object sender, SpeakProgressEventArgs e)
+            {
+
+            }
+
+            private void Synthesizer_SpeakStarted(object sender, SpeakStartedEventArgs e)
+            {
+
+            }
+            #endregion
+
+            #region События распозновальщика речи
             private void Recognition_AudioSignalProblemOccurred(object sender, AudioSignalProblemOccurredEventArgs e)
             {
 
@@ -153,86 +188,6 @@ namespace PRMover
             }
 
             private void Recognition_LoadGrammarCompleted(object sender, LoadGrammarCompletedEventArgs e)
-            {
-
-            }
-
-            private void GetTextDictationSrgs()
-            {
-                GrammarBuilder startStop = new GrammarBuilder();
-                GrammarBuilder dictation = new GrammarBuilder();
-                dictation.AppendDictation();
-
-                startStop.Append(new SemanticResultKey("StartDictation", new SemanticResultValue("Start Dictation", true)));
-                startStop.Append(new SemanticResultKey("DictationInput", dictation));
-                startStop.Append(new SemanticResultKey("EndDictation", new SemanticResultValue("Stop Dictation", false)));
-
-                GrammarBuilder spelling = new GrammarBuilder();
-                spelling.AppendDictation("spelling");
-                GrammarBuilder spellingGB = new GrammarBuilder();
-                spellingGB.Append(new SemanticResultKey("StartSpelling", new SemanticResultValue("Start Spelling", true)));
-                spellingGB.Append(new SemanticResultKey("spellingInput", spelling));
-                spellingGB.Append(new SemanticResultKey("StopSpelling", new SemanticResultValue("Stop Spelling", true)));
-
-                GrammarBuilder both = GrammarBuilder.Add(startStop, spellingGB);
-
-                SrgsDocument srgs = new SrgsDocument(both);
-
-                var _write = XmlWriter.Create($"{AppDomain.CurrentDomain.BaseDirectory}dict.xml");
-                srgs.WriteSrgs(_write);
-                _write.Close();
-
-
-                grammar = new Grammar(both);
-                grammar.Enabled = true;
-                grammar.Name = "Free-Text and Spelling Dictation";
-
-                
-                recognition.SetInputToDefaultAudioDevice();
-                recognition.LoadGrammar(grammar);
-            }
-
-            //static void sre_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
-            //{
-            //    if (e.Result.Confidence > 0.7) l.Text = e.Result.Text;
-            //}
-
-            //public class JarvisSpeechEventArgs : EventArgs
-            //{
-            //    BookmarkReachedEventArgs bookmarkReached { get; set; }
-            //    SpeakCompletedEventArgs completedEventArgs { get; set; }
-            //    SpeakProgressEventArgs progressEventArgs { get; set; }
-            //    SpeakStartedEventArgs startedEventArgs { get; set; }
-
-            //    JarvisSpeechEventArgs(BookmarkReachedEventArgs BookmarkReached,
-            //        SpeakCompletedEventArgs CompletedEventArgs,
-            //        SpeakProgressEventArgs ProgressEventArgs,
-            //        SpeakStartedEventArgs StartedEventArgs)
-            //    {
-            //        bookmarkReached = BookmarkReached;
-            //        completedEventArgs = CompletedEventArgs;
-            //        progressEventArgs = ProgressEventArgs;
-            //        startedEventArgs = StartedEventArgs;
-            //    }
-            //}
-
-            #region События синтезатора речи
-            private void Synthesizer_BookmarkReached(object sender, BookmarkReachedEventArgs e)
-            {
-
-            }
-
-            private void Synthesizer_SpeakCompleted(object sender, SpeakCompletedEventArgs e)
-            {
-
-            }
-
-            private void Synthesizer_SpeakProgress(object sender, SpeakProgressEventArgs e)
-            {
-
-            }
-
-            private void Synthesizer_SpeakStarted(object sender, SpeakStartedEventArgs e)
             {
 
             }
@@ -282,6 +237,4 @@ namespace PRMover
         }
         #endregion
     }
-
-  
 }

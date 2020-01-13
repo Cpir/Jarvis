@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Xam.Plugins.TextToSpeech" Version="4.1.0.1-beta" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Microsoft.Speech">
       <HintPath>D:\OneDrive\!Repos\!DLL\Microsoft.Speech.dll</HintPath>
     </Reference>

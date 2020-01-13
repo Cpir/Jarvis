@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<grammar xml:lang="ru-RU" root="root" tag-format="properties-ms/1.0" version="1.0" xmlns="http://www.w3.org/2001/06/grammar" xmlns:sapi="http://schemas.microsoft.com/Speech/2002/06/SRGSExtensions">
+  <rule id="StartDictation" scope="private">
+    Start Dictation<tag>True</tag>
+  </rule>
+  <rule id="DictationInput" scope="private">
+    <ruleref uri="grammar:dictation" />
+  </rule>
+  <rule id="EndDictation" scope="private">
+    Stop Dictation<tag>False</tag>
+  </rule>
+  <rule id="StartSpelling" scope="private">
+    Start Spelling<tag>True</tag>
+  </rule>
+  <rule id="spellingInput" scope="private">
+    <ruleref uri="grammar:dictation#spelling" />
+  </rule>
+  <rule id="StopSpelling" scope="private">
+    Stop Spelling<tag>True</tag>
+  </rule>
+  <rule id="root" scope="private">
+    <ruleref uri="#StartDictation" />
+    <ruleref uri="#DictationInput" />
+    <ruleref uri="#EndDictation" />
+    <ruleref uri="#StartSpelling" />
+    <ruleref uri="#spellingInput" />
+    <ruleref uri="#StopSpelling" />
+  </rule>
+</grammar>
