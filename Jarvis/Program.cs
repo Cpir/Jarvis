@@ -10,15 +10,18 @@ namespace PRMover
     {
         static void Main(string[] args)
         {
+            
+            Console.ReadLine();
             Jarvis jarvis = new Jarvis();
             while (true)
             {
                 //Console.WriteLine("Что скажем?");
                 //jarvis.Voice.Speak(Console.ReadLine());
-                jarvis.Voice.Listen($"{AppDomain.CurrentDomain.BaseDirectory}1.wav");
-                jarvis.Voice.Speak(Console.ReadLine());
+                //jarvis.Voice.Listen($"{AppDomain.CurrentDomain.BaseDirectory}1.wav");
                 
+                jarvis.Voice.Speak(Console.ReadLine());
             }
+           
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Speech.Recognition;
+using Microsoft.Speech;
 using Microsoft.Speech.Recognition.SrgsGrammar;
 using Microsoft.Speech.Synthesis;
 using System;
@@ -7,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace PRMover
@@ -28,8 +30,8 @@ namespace PRMover
             private GCHandle handle;
             public CultureInfo CultureInfo { get; set; } = new CultureInfo("ru-RU");
             private SpeechRecognitionEngine recognition { get; set; }
-            private Grammar grammar { get; set; }
-            private SpeechSynthesizer synthesizer;
+            private Microsoft.Speech.Recognition.Grammar grammar { get; set; }
+            private Microsoft.Speech.Synthesis.SpeechSynthesizer synthesizer;
             private Thread mainWorker, supportWorker;
             private bool recognitionReady = false, synthesizerReady = false;
 
@@ -72,7 +74,20 @@ namespace PRMover
 
             private void RecognitionConfigure()
             {
+                Sp
                 recognition = new SpeechRecognitionEngine();
+                GrammarBuilder startStop = new GrammarBuilder();
+                GrammarBuilder dictation = new GrammarBuilder();
+                dictation.AppendWildcard();
+                //dictation.AppendDictation();
+
+                //startStop.Append(new SemanticResultKey("StartDictation", new SemanticResultValue("Start Dictation", true)));
+                //startStop.Append(new SemanticResultKey("DictationInput", dictation));
+                //startStop.Append(new SemanticResultKey("StopDictation", new SemanticResultValue("Stop Dictation", false)));
+                Grammar grammar = new Grammar(dictation);
+                grammar.Enabled = true;
+                grammar.Name = "Free-Text Dictation";
+
 
                 if (!recognitionReady)
                 {
@@ -83,11 +98,10 @@ namespace PRMover
                     recognition.SpeechRecognized += new EventHandler<SpeechRecognizedEventArgs>(Recognition_SpeechRecognized);
                     recognition.AudioSignalProblemOccurred += new EventHandler<AudioSignalProblemOccurredEventArgs>(Recognition_AudioSignalProblemOccurred);
                 }
-                GrammarBuilder builder = new GrammarBuilder();
+                //GrammarBuilder builder = new GrammarBuilder();
                 
-                SrgsDocument srgsDocument = new SrgsDocument($"{AppDomain.CurrentDomain.BaseDirectory}123.xml");
-                grammar = new Grammar(srgsDocument);
-             
+                //SrgsDocument srgsDocument = new SrgsDocument($"{AppDomain.CurrentDomain.BaseDirectory}123.xml");
+                //grammar = new Microsoft.Speech.Recognition.Grammar(srgsDocument);
                 
                 recognition.LoadGrammar(grammar);
               
@@ -96,7 +110,7 @@ namespace PRMover
 
             private void SynthesizerConfigure()
             {
-                synthesizer = new SpeechSynthesizer();
+                synthesizer = new Microsoft.Speech.Synthesis.SpeechSynthesizer();
                 synthesizer.SetOutputToDefaultAudioDevice();
                 if (!synthesizerReady)
                 {
