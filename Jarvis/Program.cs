@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Threading;
 using Microsoft.Speech.Recognition;
 using Microsoft.Speech.Synthesis;
+using Plugin.TextToSpeech;
 
 namespace PRMover
 {
@@ -10,6 +11,7 @@ namespace PRMover
     {
         static void Main(string[] args)
         {
+            CrossTextToSpeech.Current.Speak("Text to speak");
             
             Console.ReadLine();
             Jarvis jarvis = new Jarvis();
